@@ -19,7 +19,8 @@ CXXFLAGS = -std=c++11 -Wall $(INCLUDES)
 
 TARGET = main
 
-cpp_files = src/main.cpp $(UTILS)/window.cpp $(UTILS)/shader.cpp $(UTILS)/texture.cpp
+cpp_files =	src/main.cpp $(wildcard $(UTILS)/*.cpp)
+
 objects = $(cpp_files:.cpp=.o) glad.o
 
 all: $(TARGET)
