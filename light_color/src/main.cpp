@@ -89,25 +89,38 @@ int main()
 
 	unsigned int vs = shader::loadFromFile("./shaders/vertex.glsl", GL_VERTEX_SHADER);
 	unsigned int fs = shader::loadFromFile("./shaders/fragment.glsl", GL_FRAGMENT_SHADER);
-	unsigned int sp = shader::createProgram(vs, fs);
+	unsigned int lightFs = shader::loadFromFile("./shaders/light_fragment.glsl", GL_FRAGMENT_SHADER);
+	unsigned int objShader = shader::createProgram(vs, fs);
+	unsigned int lightShader = shader::createProgram(vs, lightFs);
 	glDeleteShader(vs);
 	glDeleteShader(fs);
+	glDeleteShader(lightShader);
 	
-	unsigned int VBO, VAO;
+	unsigned int VBO, VAO, lightVAO;
 	glGenVertexArrays(1, &VAO);
+	glGenVertexArrays(1, &lightVAO);
 	glGenBuffers(1, &VBO);
+	
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
 	glBufferData(GL_ARRAY_BUFFER, sizeof(figures::cube), figures::cube, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	glUseProgram(sp);
+	glBindVertexArray(lightVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_DEPTH_TEST);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+	glUseProgram(objShader);
+	glUniform3f(glGetUniformLocation(objShader, "lightColor"), 1.0f, 1.0f, 1.0f);
+	glUniform3f(glGetUniformLocation(objShader, "objColor"), 1.0f, 0.5f, 0.31f);
+	glm::vec3 lightPos(1.2f, 10.0f, -10.0f);
 
 	while (!glfwWindowShouldClose(window.raw))
 	{
@@ -117,19 +130,36 @@ int main()
 		process_input(window.raw);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glBindVertexArray(VAO);
 		glm::mat4 model(1.0f), view(1.0f), proj;
 		view = view * camera.view_matrix();
 		proj = glm::perspective(glm::radians(camera.fov), (float)(W/H), 0.1f, 100.0f);
 
-		glUniformMatrix4fv(glGetUniformLocation(sp, "model"), 1, GL_FALSE, glm::value_ptr(model));
-		glUniformMatrix4fv(glGetUniformLocation(sp, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(sp, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
+		{
+			glUseProgram(objShader);
+			glUniformMatrix4fv(glGetUniformLocation(objShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
+			glUniformMatrix4fv(glGetUniformLocation(objShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(glGetUniformLocation(objShader, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
 
-		glm::mat4 transform(1.0f);
-		transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
-		glUniformMatrix4fv(glGetUniformLocation(sp, "transform"), 1, GL_FALSE, glm::value_ptr(transform));
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+			glm::mat4 transform(1.0f);
+			transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
+			glUniformMatrix4fv(glGetUniformLocation(objShader, "transform"), 1, GL_FALSE, glm::value_ptr(transform));
+			glBindVertexArray(VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
+		{
+			glUseProgram(lightShader);
+			model = glm::scale(model, glm::vec3(0.2f));
+			glUniformMatrix4fv(glGetUniformLocation(lightShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
+			glUniformMatrix4fv(glGetUniformLocation(lightShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
+			glUniformMatrix4fv(glGetUniformLocation(lightShader, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
+
+			glm::mat4 transform(1.0f);
+			transform = glm::translate(transform, lightPos);
+			glUniformMatrix4fv(glGetUniformLocation(lightShader, "transform"), 1, GL_FALSE, glm::value_ptr(transform));
+			glBindVertexArray(lightVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 		glfwSwapBuffers(window.raw);
 		glfwPollEvents();
@@ -137,7 +167,9 @@ int main()
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(sp);
+	glDeleteVertexArrays(1, &lightVAO);
+	glDeleteProgram(objShader);
+	glDeleteProgram(lightShader);
 
 	return 0;
 }
