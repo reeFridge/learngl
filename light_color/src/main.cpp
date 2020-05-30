@@ -120,7 +120,7 @@ int main()
 	glUseProgram(objShader);
 	glUniform3f(glGetUniformLocation(objShader, "lightColor"), 1.0f, 1.0f, 1.0f);
 	glUniform3f(glGetUniformLocation(objShader, "objColor"), 1.0f, 0.5f, 0.31f);
-	glm::vec3 lightPos(1.2f, 10.0f, -10.0f);
+	glm::vec3 lightPos(1.2f, 1.0f, -2.0f);
 
 	while (!glfwWindowShouldClose(window.raw))
 	{
@@ -140,23 +140,18 @@ int main()
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
 
-			glm::mat4 transform(1.0f);
-			transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, 0.0f));
-			glUniformMatrix4fv(glGetUniformLocation(objShader, "transform"), 1, GL_FALSE, glm::value_ptr(transform));
 			glBindVertexArray(VAO);
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
 		{
 			glUseProgram(lightShader);
+			model = glm::translate(model, lightPos);
 			model = glm::scale(model, glm::vec3(0.2f));
 			glUniformMatrix4fv(glGetUniformLocation(lightShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
 			glUniformMatrix4fv(glGetUniformLocation(lightShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(lightShader, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
 
-			glm::mat4 transform(1.0f);
-			transform = glm::translate(transform, lightPos);
-			glUniformMatrix4fv(glGetUniformLocation(lightShader, "transform"), 1, GL_FALSE, glm::value_ptr(transform));
 			glBindVertexArray(lightVAO);
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
