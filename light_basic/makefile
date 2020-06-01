@@ -13,7 +13,7 @@ GLM = $(LEARNGL_ROOT)/glm
 STB_IMAGE = $(LEARNGL_ROOT)/stb_image
 
 INCLUDES = -I$(GLAD_INCLUDE) -I$(STB_IMAGE) -I$(GLM) -I$(LEARNGL_ROOT)
-LDLIBS = -lglfw3 -lGL -lpthread -ldl
+LDLIBS = -lX11 -lglfw3 -lGL -lpthread -ldl
 CFLAGS = -Wall -I$(GLAD_INCLUDE)
 CXXFLAGS = -std=c++11 -Wall $(INCLUDES)
 
