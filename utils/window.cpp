@@ -14,7 +14,7 @@ Window::Window(unsigned int width, unsigned int height)
 	return;
     glfwMakeContextCurrent(this->raw);
     glfwSetFramebufferSizeCallback(this->raw, size_callback);
-    glfwSetInputMode(this->raw, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(this->raw, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
 
 Window::~Window()

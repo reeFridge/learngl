@@ -1,3 +1,7 @@
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cstdio>
@@ -105,6 +109,22 @@ int main()
 		return -1;
 	}
 
+	// Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
+
+    // Setup Platform/Renderer bindings
+    ImGui_ImplGlfw_InitForOpenGL(window.raw, true);
+	const char* glsl_version = "#version 330";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
 	unsigned int vs = shader::loadFromFile("./shaders/vertex.glsl", GL_VERTEX_SHADER);
 	unsigned int fs = shader::loadFromFile("./shaders/fragment.glsl", GL_FRAGMENT_SHADER);
 	unsigned int lightFs = shader::loadFromFile("./shaders/light_fragment.glsl", GL_FRAGMENT_SHADER);
@@ -135,8 +155,6 @@ int main()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_DEPTH_TEST);
 
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-
 	glUseProgram(objShader);
 	glUniform3f(glGetUniformLocation(objShader, "lightColor"), 1.0f, 1.0f, 1.0f);
 	glUniform3f(glGetUniformLocation(objShader, "objColor"), 1.0f, 0.5f, 0.31f);
@@ -144,12 +162,15 @@ int main()
 	glUniform1f(glGetUniformLocation(objShader, "ambientStrength"), ambientStrength);
 	glUniform1f(glGetUniformLocation(objShader, "specularStrength"), specularStrength);
 
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	
 	while (!glfwWindowShouldClose(window.raw))
 	{
 		float currentTime = glfwGetTime();
 		deltaTime = currentTime - lastTime;
 		lastTime = currentTime;
 		process_input(window.raw);
+		glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glm::mat4 model(1.0f), view(1.0f), proj;
@@ -184,9 +205,26 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
+		// imgui
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::Begin("Controls");
+		ImGui::ColorEdit3("clear color", (float*)&clear_color);
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		glfwSwapBuffers(window.raw);
 		glfwPollEvents();
 	}
+	// Cleanup
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
