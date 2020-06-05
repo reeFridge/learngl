@@ -4,6 +4,7 @@ out vec4 FragColor;
 in vec3 Normal;
 in vec3 FragPos;
 
+uniform uint shiness;
 uniform vec3 objColor;
 uniform vec3 lightColor;
 uniform vec3 lightPos;
@@ -20,7 +21,7 @@ void main()
 	vec3 diffuseColor = diff * lightColor;
 	vec3 viewDirection = normalize(viewPos - FragPos);
 	vec3 reflectDirection = reflect(-lightDirection, norm);
-	float specular = pow(max(dot(viewDirection, reflectDirection), 0.0), 32);
+	float specular = pow(max(dot(viewDirection, reflectDirection), 0.0), shiness);
 	vec3 specularLight = specularStrength * specular * lightColor;
 	vec3 resultColor = (ambientColor + diffuseColor + specularLight) * objColor;
     FragColor = vec4(resultColor, 1.0);

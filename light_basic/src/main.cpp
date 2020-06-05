@@ -27,7 +27,6 @@ Camera camera(
 );
 
 float lastTime = 0.0f, deltaTime = 0.0f;
-glm::vec3 lightPos(1.2f, 1.0f, -2.0f);
 
 void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
@@ -55,7 +54,7 @@ void process_input(GLFWwindow* window)
 		camera.position -= x;
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.position += x;
-	
+/*	
 	float lightSpeed = 2.0f;
 	glm::vec3 lightZ = glm::vec3(0.0f, 0.0f, 1.0f) * lightSpeed * deltaTime;
 	glm::vec3 lightX = glm::vec3(1.0f, 0.0f, 0.0f) * lightSpeed * deltaTime;
@@ -72,7 +71,7 @@ void process_input(GLFWwindow* window)
 		lightPos -= lightY;
 	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
 		lightPos += lightY;
-
+*/
 	const float rotation_speed = 2.0f;
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
@@ -113,12 +112,9 @@ int main()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
 
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForOpenGL(window.raw, true);
@@ -155,14 +151,17 @@ int main()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_DEPTH_TEST);
 
-	glUseProgram(objShader);
-	glUniform3f(glGetUniformLocation(objShader, "lightColor"), 1.0f, 1.0f, 1.0f);
-	glUniform3f(glGetUniformLocation(objShader, "objColor"), 1.0f, 0.5f, 0.31f);
 	float ambientStrength = 0.1f, specularStrength = 0.5f;
-	glUniform1f(glGetUniformLocation(objShader, "ambientStrength"), ambientStrength);
-	glUniform1f(glGetUniformLocation(objShader, "specularStrength"), specularStrength);
+	ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.0f);
+	ImVec4 lightColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	ImVec4 objColor = ImVec4(1.0f, 0.5f, 0.31f, 1.0f);
+	const char* items[] = { "2", "4", "8", "16", "32", "64", "128", "256" };
+	static int current = 4;
 
-	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	float lightRadius = 2.0f;
+	float lightAngle = 0.0f;
+
+	glm::vec3 lightPos(0.0f);
 	
 	while (!glfwWindowShouldClose(window.raw))
 	{
@@ -170,16 +169,24 @@ int main()
 		deltaTime = currentTime - lastTime;
 		lastTime = currentTime;
 		process_input(window.raw);
-		glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+		glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glm::mat4 model(1.0f), view(1.0f), proj;
-		//model = glm::scale(model, glm::vec3(0.6f, 1.4f, 0.2f));
 		view = view * camera.view_matrix();
 		proj = glm::perspective(glm::radians(camera.fov), (float)(W/H), 0.1f, 100.0f);
 
+		lightPos.x = cos(glm::radians(lightAngle));
+		lightPos.z = sin(glm::radians(lightAngle));
+		lightPos *= lightRadius;
+
 		{
 			glUseProgram(objShader);
+			glUniform1ui(glGetUniformLocation(objShader, "shiness"), atoi(items[current]));
+			glUniform1f(glGetUniformLocation(objShader, "ambientStrength"), ambientStrength);
+			glUniform1f(glGetUniformLocation(objShader, "specularStrength"), specularStrength);
+			glUniform3f(glGetUniformLocation(objShader, "lightColor"), lightColor.x, lightColor.y, lightColor.z);
+			glUniform3f(glGetUniformLocation(objShader, "objColor"), objColor.x, objColor.y, objColor.z);
 			glUniform3fv(glGetUniformLocation(objShader, "lightPos"), 1, glm::value_ptr(lightPos));
 			glUniform3fv(glGetUniformLocation(objShader, "viewPos"), 1, glm::value_ptr(camera.position));
 			glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
@@ -209,9 +216,17 @@ int main()
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+		//ImGui::ShowDemoWindow();
 
 		ImGui::Begin("Controls");
-		ImGui::ColorEdit3("clear color", (float*)&clear_color);
+		ImGui::ColorEdit3("clear color", (float*)&clearColor);
+		ImGui::ColorEdit3("light color", (float*)&lightColor);
+		ImGui::ColorEdit3("obj color", (float*)&objColor);
+		ImGui::Combo("shiness", &current, items, IM_ARRAYSIZE(items));
+		ImGui::SliderFloat("specular strength", &specularStrength, 0.0f, 1.0f);
+		ImGui::SliderFloat("ambient strength", &ambientStrength , 0.0f, 1.0f);
+		ImGui::SliderFloat("light angle", &lightAngle , 0.0f, 360.0f);
+		ImGui::SliderFloat("light radius", &lightRadius, 1.0f, 5.0f);
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
 
