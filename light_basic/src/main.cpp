@@ -188,8 +188,7 @@ int main()
 			glUniform3f(glGetUniformLocation(objShader, "lightColor"), lightColor.x, lightColor.y, lightColor.z);
 			glUniform3f(glGetUniformLocation(objShader, "objColor"), objColor.x, objColor.y, objColor.z);
 			glUniform3fv(glGetUniformLocation(objShader, "lightPos"), 1, glm::value_ptr(lightPos));
-			glUniform3fv(glGetUniformLocation(objShader, "viewPos"), 1, glm::value_ptr(camera.position));
-			glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
+			glm::mat3 normalMatrix = glm::transpose(glm::inverse(view * model));
 			glUniformMatrix3fv(glGetUniformLocation(objShader, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
