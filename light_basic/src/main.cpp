@@ -121,13 +121,18 @@ int main()
 	const char* glsl_version = "#version 330";
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-	unsigned int vs = shader::loadFromFile("./shaders/vertex.glsl", GL_VERTEX_SHADER);
-	unsigned int fs = shader::loadFromFile("./shaders/fragment.glsl", GL_FRAGMENT_SHADER);
+	unsigned int phongvs = shader::loadFromFile("./shaders/phong_vertex.glsl", GL_VERTEX_SHADER);
+	unsigned int phongfs = shader::loadFromFile("./shaders/phong_fragment.glsl", GL_FRAGMENT_SHADER);
+	unsigned int gouraudvs = shader::loadFromFile("./shaders/gouraud_vertex.glsl", GL_VERTEX_SHADER);
+	unsigned int gouraudfs = shader::loadFromFile("./shaders/gouraud_fragment.glsl", GL_FRAGMENT_SHADER);
 	unsigned int lightFs = shader::loadFromFile("./shaders/light_fragment.glsl", GL_FRAGMENT_SHADER);
-	unsigned int objShader = shader::createProgram(vs, fs);
-	unsigned int lightShader = shader::createProgram(vs, lightFs);
-	glDeleteShader(vs);
-	glDeleteShader(fs);
+	unsigned int objPhongShader = shader::createProgram(phongvs, phongfs);
+	unsigned int objGouraudShader = shader::createProgram(gouraudvs, gouraudfs);
+	unsigned int lightShader = shader::createProgram(phongvs, lightFs);
+	glDeleteShader(phongvs);
+	glDeleteShader(phongfs);
+	glDeleteShader(gouraudvs);
+	glDeleteShader(gouraudfs);
 	glDeleteShader(lightShader);
 	
 	unsigned int VBO, VAO, lightVAO;
@@ -156,12 +161,15 @@ int main()
 	ImVec4 lightColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	ImVec4 objColor = ImVec4(1.0f, 0.5f, 0.31f, 1.0f);
 	const char* items[] = { "2", "4", "8", "16", "32", "64", "128", "256" };
-	static int current = 4;
+	int current = 4;
 
 	float lightRadius = 2.0f;
 	float lightAngle = 0.0f;
 
 	glm::vec3 lightPos(0.0f);
+	enum ShadingMethod { Gouraud, Phong };
+	const char* methodNames[2] = { "Gouraud", "Phong" };
+	int currentMethod = Phong;
 	
 	while (!glfwWindowShouldClose(window.raw))
 	{
@@ -176,12 +184,19 @@ int main()
 		view = view * camera.view_matrix();
 		proj = glm::perspective(glm::radians(camera.fov), (float)(W/H), 0.1f, 100.0f);
 
-		lightPos.x = cos(glm::radians(lightAngle));
-		lightPos.z = sin(glm::radians(lightAngle));
+		lightPos.x = cos(lightAngle);
+		lightPos.z = sin(lightAngle);
 		lightPos *= lightRadius;
 
 		{
-			glUseProgram(objShader);
+			unsigned int objShader = objPhongShader;
+			if (currentMethod == Phong)
+				glUseProgram(objPhongShader);
+			else if (currentMethod == Gouraud) {
+				objShader = objGouraudShader;
+				glUseProgram(objGouraudShader);
+			}
+
 			glUniform1ui(glGetUniformLocation(objShader, "shiness"), atoi(items[current]));
 			glUniform1f(glGetUniformLocation(objShader, "ambientStrength"), ambientStrength);
 			glUniform1f(glGetUniformLocation(objShader, "specularStrength"), specularStrength);
@@ -215,16 +230,18 @@ int main()
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		//ImGui::ShowDemoWindow();
+//		ImGui::ShowDemoWindow();
 
 		ImGui::Begin("Controls");
+		const char* methodName = methodNames[currentMethod];
+		ImGui::SliderInt("shading method", &currentMethod, 0, 1, methodName);
 		ImGui::ColorEdit3("clear color", (float*)&clearColor);
 		ImGui::ColorEdit3("light color", (float*)&lightColor);
 		ImGui::ColorEdit3("obj color", (float*)&objColor);
 		ImGui::Combo("shiness", &current, items, IM_ARRAYSIZE(items));
 		ImGui::SliderFloat("specular strength", &specularStrength, 0.0f, 1.0f);
 		ImGui::SliderFloat("ambient strength", &ambientStrength , 0.0f, 1.0f);
-		ImGui::SliderFloat("light angle", &lightAngle , 0.0f, 360.0f);
+		ImGui::SliderAngle("light angle", &lightAngle);
 		ImGui::SliderFloat("light radius", &lightRadius, 1.0f, 5.0f);
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
@@ -243,7 +260,8 @@ int main()
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteVertexArrays(1, &lightVAO);
-	glDeleteProgram(objShader);
+	glDeleteProgram(objPhongShader);
+	glDeleteProgram(objGouraudShader);
 	glDeleteProgram(lightShader);
 
 	return 0;

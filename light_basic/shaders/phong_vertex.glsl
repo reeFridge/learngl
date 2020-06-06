@@ -15,6 +15,7 @@ uniform vec3 lightPos;
 void main()
 {
     gl_Position = proj * view * model * vec4(aPos, 1.0);
+	// interpolates into specific fragment position in fragment shader
 	FragPos = vec3(view * model * vec4(aPos, 1.0));
 	Normal = normalMatrix * aNormal;
 	LightPos = vec3(view * vec4(lightPos, 1.0));
