@@ -156,10 +156,13 @@ int main()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_DEPTH_TEST);
 
-	float ambientStrength = 0.1f, specularStrength = 0.5f;
 	ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.0f);
-	ImVec4 lightColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-	ImVec4 objColor = ImVec4(1.0f, 0.5f, 0.31f, 1.0f);
+	ImVec4 lightAmbient = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+	ImVec4 lightDiffuse = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+	ImVec4 lightSpecular = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	ImVec4 ambient = ImVec4(1.0f, 0.5f, 0.31f, 1.0f);
+	ImVec4 diffuse = ImVec4(1.0f, 0.5f, 0.31f, 1.0f);
+	ImVec4 specular = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 	const char* items[] = { "2", "4", "8", "16", "32", "64", "128", "256" };
 	int current = 4;
 
@@ -197,11 +200,13 @@ int main()
 				glUseProgram(objGouraudShader);
 			}
 
-			glUniform1ui(glGetUniformLocation(objShader, "shiness"), atoi(items[current]));
-			glUniform1f(glGetUniformLocation(objShader, "ambientStrength"), ambientStrength);
-			glUniform1f(glGetUniformLocation(objShader, "specularStrength"), specularStrength);
-			glUniform3f(glGetUniformLocation(objShader, "lightColor"), lightColor.x, lightColor.y, lightColor.z);
-			glUniform3f(glGetUniformLocation(objShader, "objColor"), objColor.x, objColor.y, objColor.z);
+			glUniform1ui(glGetUniformLocation(objShader, "material.shininess"), atoi(items[current]));
+			glUniform3f(glGetUniformLocation(objShader, "light.ambient"), lightAmbient.x, lightAmbient.y, lightAmbient.z);
+			glUniform3f(glGetUniformLocation(objShader, "light.diffuse"), lightDiffuse.x, lightDiffuse.y, lightDiffuse.z);
+			glUniform3f(glGetUniformLocation(objShader, "light.specular"), lightSpecular.x, lightSpecular.y, lightSpecular.z);
+			glUniform3f(glGetUniformLocation(objShader, "material.ambient"), ambient.x, ambient.y, ambient.z);
+			glUniform3f(glGetUniformLocation(objShader, "material.diffuse"), diffuse.x, diffuse.y, diffuse.z);
+			glUniform3f(glGetUniformLocation(objShader, "material.specular"), specular.x, specular.y, specular.z);
 			glUniform3fv(glGetUniformLocation(objShader, "lightPos"), 1, glm::value_ptr(lightPos));
 			glm::mat3 normalMatrix = glm::transpose(glm::inverse(view * model));
 			glUniformMatrix3fv(glGetUniformLocation(objShader, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
@@ -236,11 +241,13 @@ int main()
 		const char* methodName = methodNames[currentMethod];
 		ImGui::SliderInt("shading method", &currentMethod, 0, 1, methodName);
 		ImGui::ColorEdit3("clear color", (float*)&clearColor);
-		ImGui::ColorEdit3("light color", (float*)&lightColor);
-		ImGui::ColorEdit3("obj color", (float*)&objColor);
-		ImGui::Combo("shiness", &current, items, IM_ARRAYSIZE(items));
-		ImGui::SliderFloat("specular strength", &specularStrength, 0.0f, 1.0f);
-		ImGui::SliderFloat("ambient strength", &ambientStrength , 0.0f, 1.0f);
+		ImGui::ColorEdit3("ambient light color", (float*)&lightAmbient);
+		ImGui::ColorEdit3("diffuse light color", (float*)&lightDiffuse);
+		ImGui::ColorEdit3("specular light color", (float*)&lightSpecular);
+		ImGui::ColorEdit3("ambient color", (float*)&ambient);
+		ImGui::ColorEdit3("diffuse color", (float*)&diffuse);
+		ImGui::ColorEdit3("specular color", (float*)&specular);
+		ImGui::Combo("shininess", &current, items, IM_ARRAYSIZE(items));
 		ImGui::SliderAngle("light angle", &lightAngle);
 		ImGui::SliderFloat("light radius", &lightRadius, 1.0f, 5.0f);
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

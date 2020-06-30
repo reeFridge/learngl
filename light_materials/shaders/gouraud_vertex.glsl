@@ -1,4 +1,17 @@
 #version 330 core
+struct Material {
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+	uint shininess;
+};
+
+struct Light {
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
 
@@ -10,10 +23,8 @@ uniform mat4 view;
 uniform mat4 proj;
 
 uniform vec3 lightPos;
-uniform uint shiness;
-uniform vec3 lightColor;
-uniform float ambientStrength;
-uniform float specularStrength;
+uniform Material material;
+uniform Light light;
 
 void main()
 {
@@ -23,15 +34,15 @@ void main()
 	vec3 viewLightPos = vec3(view * vec4(lightPos, 1.0));
 
 	//ambient
-	vec3 ambientColor = ambientStrength * lightColor;
+	vec3 ambientColor = material.ambient * light.ambient;
 	// diffuse
 	vec3 lightDirection = normalize(viewLightPos - vertexPos);
 	float diff = max(dot(norm, lightDirection), 0.0);
-	vec3 diffuseColor = diff * lightColor;
+	vec3 diffuseColor = (material.diffuse * diff) * light.diffuse;
 	// specular
 	vec3 viewDirection = normalize(-vertexPos);
 	vec3 reflectDirection = reflect(-lightDirection, norm);
-	float specular = pow(max(dot(viewDirection, reflectDirection), 0.0), shiness);
-	vec3 specularLight = specularStrength * specular * lightColor;
+	float specular = pow(max(dot(viewDirection, reflectDirection), 0.0), material.shininess);
+	vec3 specularLight = (material.specular * specular) * light.specular;
 	ResultColor = ambientColor + diffuseColor + specularLight;
 }
