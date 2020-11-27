@@ -173,18 +173,20 @@ int main()
 	ImVec4 lightDiffuse = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 	ImVec4 lightSpecular = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 	ImVec4 lightDirection = ImVec4(-0.2f, -1.0f, -0.3f, 1.0f);
-	ImVec4 spotDirection = ImVec4(-1.0f, 0.0f, 0.0f, 1.0f);
+	ImVec4 spotDirection = ImVec4(0.0f, 0.0f, -1.0f, 1.0f);
 	const char* items[] = { "2", "4", "8", "16", "32", "64", "128", "256" };
 	int current = 4;
 
 	float lightRadius = 2.0f;
 	float lightAngle = 0.0f;
 	float cutoffAngle = 0.5f;
+	bool shouldRotate = false;
 
-	glm::vec3 lightPos(0.0f);
+	//glm::vec3 lightPos(0.0f);
+	ImVec4 lightPos = ImVec4(-1.0f, 0.0f, 5.0f, 1.0f);
 	enum LightCasterType { Directional, Point, Spot };
 	const char* lightCasterTypeNames[3] = { "Directional", "Point", "Spot" };
-	int currentLightCasterType = Point;
+	int currentLightCasterType = Spot;
     glm::vec3 cubePositions[] = {
 		glm::vec3( 0.0f,  0.0f,  0.0f),
 		glm::vec3( 2.0f,  5.0f, -15.0f),
@@ -218,9 +220,9 @@ int main()
 		view = view * camera.view_matrix();
 		proj = glm::perspective(glm::radians(camera.fov), (float)(W/H), 0.1f, 100.0f);
 
-		lightPos.x = cos(lightAngle);
-		lightPos.z = sin(lightAngle);
-		lightPos *= lightRadius;
+		//lightPos.x = cos(lightAngle);
+		//lightPos.z = sin(lightAngle);
+		//lightPos *= lightRadius;
 
 		{
 			unsigned int objShader = objPhongShader;
@@ -251,7 +253,7 @@ int main()
 			}
 			else
 			{
-				glUniform3fv(glGetUniformLocation(objShader, "lightPos"), 1, glm::value_ptr(lightPos));
+				glUniform3f(glGetUniformLocation(objShader, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 			}
 
 			if (currentLightCasterType == Point)
@@ -275,10 +277,13 @@ int main()
 			for (unsigned int i = 0; i < 10; ++i)
 			{
 				glm::mat4 model(1.0f);
+				glm::mat3 normalMatrix = glm::transpose(glm::inverse(view * model));
 				model = glm::translate(model, cubePositions[i]);
 				float angle = 20.0f * i;
-				model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-				glm::mat3 normalMatrix = glm::transpose(glm::inverse(view * model));
+				if (shouldRotate)
+				{
+					model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+				}
 				glUniformMatrix3fv(glGetUniformLocation(objShader, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 				glUniformMatrix4fv(glGetUniformLocation(objShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
 				glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -289,7 +294,7 @@ int main()
 		{
 			glUseProgram(lightShader);
 			glm::mat4 model(1.0f);
-			model = glm::translate(model, lightPos);
+			model = glm::translate(model, glm::vec3(lightPos.x, lightPos.y, lightPos.z));
 			model = glm::scale(model, glm::vec3(0.2f));
 			glUniformMatrix4fv(glGetUniformLocation(lightShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
 			glUniformMatrix4fv(glGetUniformLocation(lightShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -312,10 +317,12 @@ int main()
 		ImGui::ColorEdit3("specular light color", (float*)&lightSpecular);
 		ImGui::Combo("shininess", &current, items, IM_ARRAYSIZE(items));
 		ImGui::Combo("light caster", &currentLightCasterType, lightCasterTypeNames, IM_ARRAYSIZE(lightCasterTypeNames));
+		ImGui::Checkbox("rotate boxes", (bool*)&shouldRotate);
 		if (currentLightCasterType == Point || currentLightCasterType == Spot)
 		{
-			ImGui::SliderAngle("light angle", &lightAngle);
-			ImGui::SliderFloat("light radius", &lightRadius, 1.0f, 5.0f);
+			//ImGui::SliderAngle("light angle", &lightAngle);
+			//ImGui::SliderFloat("light radius", &lightRadius, 1.0f, 5.0f);
+			ImGui::InputFloat3("light pos", (float*)&lightPos);
 		}
 		if (currentLightCasterType == Directional)
 		{

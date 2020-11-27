@@ -30,7 +30,7 @@ void main()
 	vec3 ambientColor = vec3(texture(material.diffuse, TexCoords)) * light.ambient;
 	vec3 norm = normalize(Normal);
 	vec3 lightDirection = normalize(LightPos - FragPos);
-	float theta = max(dot(lightDirection, normalize(SpotDir)), 0.0);
+	float theta = dot(lightDirection, normalize(SpotDir));
 	if (theta > light.cutoffAngle)
 	{
 		float diff = max(dot(norm, lightDirection), 0.0);
