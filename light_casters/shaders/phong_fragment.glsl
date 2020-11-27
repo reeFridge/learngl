@@ -45,6 +45,7 @@ void main()
 	ambientColor *= attenuation;
 	diffuseColor *= attenuation;
 	specularLight *= attenuation;
+	emissionColor *= attenuation;
 	vec3 resultColor = ambientColor + diffuseColor + specularLight + emissionColor;
     FragColor = vec4(resultColor, 1.0);
 }

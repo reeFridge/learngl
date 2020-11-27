@@ -177,12 +177,11 @@ int main()
 	const char* items[] = { "2", "4", "8", "16", "32", "64", "128", "256" };
 	int current = 4;
 
-	float lightRadius = 2.0f;
-	float lightAngle = 0.0f;
-	float cutoffAngle = 0.5f;
+	float cutoffAngle = 12.5f;
+	float attenuationLinear = 0.09f;
+	float attenuationQuadratic = 0.032f;
 	bool shouldRotate = false;
 
-	//glm::vec3 lightPos(0.0f);
 	ImVec4 lightPos = ImVec4(-1.0f, 0.0f, 5.0f, 1.0f);
 	enum LightCasterType { Directional, Point, Spot };
 	const char* lightCasterTypeNames[3] = { "Directional", "Point", "Spot" };
@@ -220,10 +219,6 @@ int main()
 		view = view * camera.view_matrix();
 		proj = glm::perspective(glm::radians(camera.fov), (float)(W/H), 0.1f, 100.0f);
 
-		//lightPos.x = cos(lightAngle);
-		//lightPos.z = sin(lightAngle);
-		//lightPos *= lightRadius;
-
 		{
 			unsigned int objShader = objPhongShader;
 			if (currentLightCasterType == Directional)
@@ -256,17 +251,17 @@ int main()
 				glUniform3f(glGetUniformLocation(objShader, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 			}
 
-			if (currentLightCasterType == Point)
+			if (currentLightCasterType == Point || currentLightCasterType == Spot)
 			{
 				glUniform1f(glGetUniformLocation(objShader, "light.constant"), 1.0f);
-				glUniform1f(glGetUniformLocation(objShader, "light.linear"), 0.09f);
-				glUniform1f(glGetUniformLocation(objShader, "light.quadratic"), 0.032f);
+				glUniform1f(glGetUniformLocation(objShader, "light.linear"), attenuationLinear);
+				glUniform1f(glGetUniformLocation(objShader, "light.quadratic"), attenuationQuadratic);
 			}
 
 			if (currentLightCasterType == Spot)
 			{
 				glUniform3f(glGetUniformLocation(objShader, "spotDir"), spotDirection.x, spotDirection.y, spotDirection.z);
-				glUniform1f(glGetUniformLocation(objShader, "light.cutoffAngle"), glm::cos(glm::radians(12.5f)));
+				glUniform1f(glGetUniformLocation(objShader, "light.cutoffAngle"), glm::cos(glm::radians(cutoffAngle)));
 			}
 
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -320,8 +315,8 @@ int main()
 		ImGui::Checkbox("rotate boxes", (bool*)&shouldRotate);
 		if (currentLightCasterType == Point || currentLightCasterType == Spot)
 		{
-			//ImGui::SliderAngle("light angle", &lightAngle);
-			//ImGui::SliderFloat("light radius", &lightRadius, 1.0f, 5.0f);
+			ImGui::SliderFloat("linear term", &attenuationLinear, 0.027f, 0.7f);
+			ImGui::SliderFloat("quadratic term", &attenuationQuadratic, 0.003f, 1.8f);
 			ImGui::InputFloat3("light pos", (float*)&lightPos);
 		}
 		if (currentLightCasterType == Directional)
@@ -331,7 +326,7 @@ int main()
 		if (currentLightCasterType == Spot)
 		{
 			ImGui::InputFloat3("spot direction", (float*)&spotDirection);
-			ImGui::SliderAngle("spot cutoff angle", &cutoffAngle);
+			ImGui::SliderFloat("spot cutoff angle", &cutoffAngle, 0.0f, 25.0f);
 		}
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
