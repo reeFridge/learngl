@@ -178,6 +178,7 @@ int main()
 	int current = 4;
 
 	float cutoffAngle = 12.5f;
+	float outerCutoffAngle = 17.5f;
 	float attenuationLinear = 0.09f;
 	float attenuationQuadratic = 0.032f;
 	bool shouldRotate = false;
@@ -262,6 +263,7 @@ int main()
 			{
 				glUniform3f(glGetUniformLocation(objShader, "spotDir"), spotDirection.x, spotDirection.y, spotDirection.z);
 				glUniform1f(glGetUniformLocation(objShader, "light.cutoffAngle"), glm::cos(glm::radians(cutoffAngle)));
+				glUniform1f(glGetUniformLocation(objShader, "light.outerCutoffAngle"), glm::cos(glm::radians(outerCutoffAngle)));
 			}
 
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -326,7 +328,8 @@ int main()
 		if (currentLightCasterType == Spot)
 		{
 			ImGui::InputFloat3("spot direction", (float*)&spotDirection);
-			ImGui::SliderFloat("spot cutoff angle", &cutoffAngle, 0.0f, 25.0f);
+			ImGui::SliderFloat("spot inner cutoff angle", &cutoffAngle, 0.0f, 25.0f);
+			ImGui::SliderFloat("spot outer cutoff angle", &outerCutoffAngle, 5.0f, 25.0f);
 		}
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
