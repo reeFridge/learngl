@@ -17,8 +17,8 @@
 #include <utils/texture.h>
 #include <common/figures.h>
 
-const unsigned int W = 800;
-const unsigned int H = 600;
+const unsigned int W = 1024;
+const unsigned int H = 768;
 
 Camera camera(
 	45.0f, // fov
@@ -55,24 +55,7 @@ void process_input(GLFWwindow* window)
 		camera.position -= x;
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.position += x;
-/*	
-	float lightSpeed = 2.0f;
-	glm::vec3 lightZ = glm::vec3(0.0f, 0.0f, 1.0f) * lightSpeed * deltaTime;
-	glm::vec3 lightX = glm::vec3(1.0f, 0.0f, 0.0f) * lightSpeed * deltaTime;
-	glm::vec3 lightY = glm::vec3(0.0f, 1.0f, 0.0f) * lightSpeed * deltaTime;
-	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-		lightPos -= lightZ;
-	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
-		lightPos += lightZ;
-	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		lightPos -= lightX;
-	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-		lightPos += lightX;
-	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-		lightPos -= lightY;
-	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-		lightPos += lightY;
-*/
+
 	const float rotation_speed = 2.0f;
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
@@ -122,24 +105,18 @@ int main()
 	const char* glsl_version = "#version 330";
     ImGui_ImplOpenGL3_Init(glsl_version);
 
+	unsigned int combinedVS = shader::loadFromFile("./shaders/phong_combined_vertex.glsl", GL_VERTEX_SHADER);
+	unsigned int combinedFS = shader::loadFromFile("./shaders/phong_combined_fragment.glsl", GL_FRAGMENT_SHADER);
 	unsigned int phongvs = shader::loadFromFile("./shaders/phong_vertex.glsl", GL_VERTEX_SHADER);
-	unsigned int phongfs = shader::loadFromFile("./shaders/phong_fragment.glsl", GL_FRAGMENT_SHADER);
-	unsigned int phongDirVS = shader::loadFromFile("./shaders/phong_dir_vertex.glsl", GL_VERTEX_SHADER);
-	unsigned int phongDirFS = shader::loadFromFile("./shaders/phong_dir_fragment.glsl", GL_FRAGMENT_SHADER);
-	unsigned int phongSpotVS = shader::loadFromFile("./shaders/phong_spot_vertex.glsl", GL_VERTEX_SHADER);
-	unsigned int phongSpotFS = shader::loadFromFile("./shaders/phong_spot_fragment.glsl", GL_FRAGMENT_SHADER);
-	unsigned int lightFs = shader::loadFromFile("./shaders/light_fragment.glsl", GL_FRAGMENT_SHADER);
-	unsigned int objPhongShader = shader::createProgram(phongvs, phongfs);
-	unsigned int objPhongDirShader = shader::createProgram(phongDirVS, phongDirFS);
-	unsigned int objPhongSpotShader = shader::createProgram(phongSpotVS, phongSpotFS);
-	unsigned int lightShader = shader::createProgram(phongvs, lightFs);
+	unsigned int lightFS = shader::loadFromFile("./shaders/light_fragment.glsl", GL_FRAGMENT_SHADER);
+
+	unsigned int objPhongShader = shader::createProgram(combinedVS, combinedFS);
+	unsigned int lightShader = shader::createProgram(phongvs, lightFS);
+
 	glDeleteShader(phongvs);
-	glDeleteShader(phongfs);
-	glDeleteShader(phongDirVS);
-	glDeleteShader(phongDirFS);
-	glDeleteShader(phongSpotVS);
-	glDeleteShader(phongSpotFS);
-	glDeleteShader(lightShader);
+	glDeleteShader(combinedVS);
+	glDeleteShader(combinedFS);
+	glDeleteShader(lightFS);
 	
 	unsigned int container_tex = texture::loadTexture("./textures/container2.png");
 	unsigned int emission_map = texture::loadTexture("./textures/matrix.jpg");
@@ -169,11 +146,26 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	ImVec4 clearColor = ImVec4(0.2, 0.2, 0.2, 1.0f);
-	ImVec4 lightAmbient = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
-	ImVec4 lightDiffuse = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-	ImVec4 lightSpecular = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-	ImVec4 lightDirection = ImVec4(-0.2f, -1.0f, -0.3f, 1.0f);
-	ImVec4 spotDirection = ImVec4(0.0f, 0.0f, -1.0f, 1.0f);
+
+	// directionalLight
+	ImVec4 directionalLightAmbient = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+	ImVec4 directionalLightDiffuse = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+	ImVec4 directionalLightSpecular = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	ImVec4 directionalLightDir = ImVec4(-0.2f, -1.0f, -0.3f, 1.0f);
+
+	// pointLight
+	ImVec4 pointLightAmbient = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+	ImVec4 pointLightDiffuse = ImVec4(0.5f, 0.0f, 0.0f, 1.0f);
+	ImVec4 pointLightSpecular = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	ImVec4 pointLightPos = ImVec4(0.0f, 2.0f, -2.0f, 1.0f);
+
+	// spotLight
+	ImVec4 spotLightAmbient = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+	ImVec4 spotLightDiffuse = ImVec4(0.0f, 0.5f, 0.0f, 1.0f);
+	ImVec4 spotLightSpecular = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	ImVec4 spotLightPos = ImVec4(0.0f, 0.0f, 2.0f, 1.0f);
+	ImVec4 spotLightDir = ImVec4(0.0f, 0.0f, -1.0f, 1.0f);
+
 	const char* items[] = { "2", "4", "8", "16", "32", "64", "128", "256" };
 	int current = 4;
 
@@ -183,10 +175,6 @@ int main()
 	float attenuationQuadratic = 0.032f;
 	bool shouldRotate = false;
 
-	ImVec4 lightPos = ImVec4(-1.0f, 0.0f, 5.0f, 1.0f);
-	enum LightCasterType { Directional, Point, Spot };
-	const char* lightCasterTypeNames[3] = { "Directional", "Point", "Spot" };
-	int currentLightCasterType = Spot;
     glm::vec3 cubePositions[] = {
 		glm::vec3( 0.0f,  0.0f,  0.0f),
 		glm::vec3( 2.0f,  5.0f, -15.0f),
@@ -222,49 +210,36 @@ int main()
 
 		{
 			unsigned int objShader = objPhongShader;
-			if (currentLightCasterType == Directional)
-			{
-				objShader = objPhongDirShader;
-			}
-			if (currentLightCasterType == Point)
-			{
-				objShader = objPhongShader;
-			}
-			if (currentLightCasterType == Spot)
-			{
-				objShader = objPhongSpotShader;
-			}
 			glUseProgram(objShader);
 
 			glUniform1i(glGetUniformLocation(objShader, "material.diffuse"), 0);
 			glUniform1i(glGetUniformLocation(objShader, "material.specular"), 1);
 			glUniform1i(glGetUniformLocation(objShader, "material.emission"), 2);
 			glUniform1ui(glGetUniformLocation(objShader, "material.shininess"), atoi(items[current]));
-			glUniform3f(glGetUniformLocation(objShader, "light.ambient"), lightAmbient.x, lightAmbient.y, lightAmbient.z);
-			glUniform3f(glGetUniformLocation(objShader, "light.diffuse"), lightDiffuse.x, lightDiffuse.y, lightDiffuse.z);
-			glUniform3f(glGetUniformLocation(objShader, "light.specular"), lightSpecular.x, lightSpecular.y, lightSpecular.z);
-			if (currentLightCasterType == Directional)
-			{
-				glUniform3f(glGetUniformLocation(objShader, "lightDir"), lightDirection.x, lightDirection.y, lightDirection.z);
-			}
-			else
-			{
-				glUniform3f(glGetUniformLocation(objShader, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-			}
 
-			if (currentLightCasterType == Point || currentLightCasterType == Spot)
-			{
-				glUniform1f(glGetUniformLocation(objShader, "light.constant"), 1.0f);
-				glUniform1f(glGetUniformLocation(objShader, "light.linear"), attenuationLinear);
-				glUniform1f(glGetUniformLocation(objShader, "light.quadratic"), attenuationQuadratic);
-			}
+			glUniform3f(glGetUniformLocation(objShader, "directionalLight.ambient"), directionalLightAmbient.x, directionalLightAmbient.y, directionalLightAmbient.z);
+			glUniform3f(glGetUniformLocation(objShader, "directionalLight.diffuse"), directionalLightDiffuse.x, directionalLightDiffuse.y, directionalLightDiffuse.z);
+			glUniform3f(glGetUniformLocation(objShader, "directionalLight.specular"), directionalLightSpecular.x, directionalLightSpecular.y, directionalLightSpecular.z);
+			glUniform3f(glGetUniformLocation(objShader, "directionalLightDir"), directionalLightDir.x, directionalLightDir.y, directionalLightDir.z);
 
-			if (currentLightCasterType == Spot)
-			{
-				glUniform3f(glGetUniformLocation(objShader, "spotDir"), spotDirection.x, spotDirection.y, spotDirection.z);
-				glUniform1f(glGetUniformLocation(objShader, "light.cutoffAngle"), glm::cos(glm::radians(cutoffAngle)));
-				glUniform1f(glGetUniformLocation(objShader, "light.outerCutoffAngle"), glm::cos(glm::radians(outerCutoffAngle)));
-			}
+			glUniform3f(glGetUniformLocation(objShader, "pointLight.ambient"), pointLightAmbient.x, pointLightAmbient.y, pointLightAmbient.z);
+			glUniform3f(glGetUniformLocation(objShader, "pointLight.diffuse"), pointLightDiffuse.x, pointLightDiffuse.y, pointLightDiffuse.z);
+			glUniform3f(glGetUniformLocation(objShader, "pointLight.specular"), pointLightSpecular.x, pointLightSpecular.y, pointLightSpecular.z);
+			glUniform3f(glGetUniformLocation(objShader, "pointLightPos"), pointLightPos.x, pointLightPos.y, pointLightPos.z);
+			glUniform1f(glGetUniformLocation(objShader, "pointLight.constant"), 1.0f);
+			glUniform1f(glGetUniformLocation(objShader, "pointLight.linear"), attenuationLinear);
+			glUniform1f(glGetUniformLocation(objShader, "pointLight.quadratic"), attenuationQuadratic);
+
+			glUniform3f(glGetUniformLocation(objShader, "spotLight.ambient"), spotLightAmbient.x, spotLightAmbient.y, spotLightAmbient.z);
+			glUniform3f(glGetUniformLocation(objShader, "spotLight.diffuse"), spotLightDiffuse.x, spotLightDiffuse.y, spotLightDiffuse.z);
+			glUniform3f(glGetUniformLocation(objShader, "spotLight.specular"), spotLightSpecular.x, spotLightSpecular.y, spotLightSpecular.z);
+			glUniform3f(glGetUniformLocation(objShader, "spotLightPos"), spotLightPos.x, spotLightPos.y, spotLightPos.z);
+			glUniform3f(glGetUniformLocation(objShader, "spotLightDir"), spotLightDir.x, spotLightDir.y, spotLightDir.z);
+			glUniform1f(glGetUniformLocation(objShader, "spotLight.cutoffAngle"), glm::cos(glm::radians(cutoffAngle)));
+			glUniform1f(glGetUniformLocation(objShader, "spotLight.outerCutoffAngle"), glm::cos(glm::radians(outerCutoffAngle)));
+			glUniform1f(glGetUniformLocation(objShader, "spotLight.constant"), 1.0f);
+			glUniform1f(glGetUniformLocation(objShader, "spotLight.linear"), attenuationLinear);
+			glUniform1f(glGetUniformLocation(objShader, "spotLight.quadratic"), attenuationQuadratic);
 
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
@@ -287,17 +262,30 @@ int main()
 			}
 		}
 
-		if (currentLightCasterType != Directional)
+		// draw light positions
+		glUseProgram(lightShader);
+		glUniformMatrix4fv(glGetUniformLocation(lightShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(lightShader, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
+		glBindVertexArray(lightVAO);
+		for (unsigned int i = 0; i < 2; ++i)
 		{
-			glUseProgram(lightShader);
 			glm::mat4 model(1.0f);
-			model = glm::translate(model, glm::vec3(lightPos.x, lightPos.y, lightPos.z));
-			model = glm::scale(model, glm::vec3(0.2f));
-			glUniformMatrix4fv(glGetUniformLocation(lightShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
-			glUniformMatrix4fv(glGetUniformLocation(lightShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
-			glUniformMatrix4fv(glGetUniformLocation(lightShader, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
 
-			glBindVertexArray(lightVAO);
+			if (i == 0)
+			{
+				model = glm::translate(model, glm::vec3(pointLightPos.x, pointLightPos.y, pointLightPos.z));
+				glUniform3f(glGetUniformLocation(lightShader, "color"), pointLightDiffuse.x, pointLightDiffuse.y, pointLightDiffuse.z);
+			}
+			else
+			{
+				model = glm::translate(model, glm::vec3(spotLightPos.x, spotLightPos.y, spotLightPos.z));
+				glUniform3f(glGetUniformLocation(lightShader, "color"), spotLightDiffuse.x, spotLightDiffuse.y, spotLightDiffuse.z);
+			}
+			
+			model = glm::scale(model, glm::vec3(0.2f));
+
+			glUniformMatrix4fv(glGetUniformLocation(lightShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
@@ -309,28 +297,39 @@ int main()
 
 		ImGui::Begin("Controls");
 		ImGui::ColorEdit3("clear color", (float*)&clearColor);
-		ImGui::ColorEdit3("ambient light color", (float*)&lightAmbient);
-		ImGui::ColorEdit3("diffuse light color", (float*)&lightDiffuse);
-		ImGui::ColorEdit3("specular light color", (float*)&lightSpecular);
 		ImGui::Combo("shininess", &current, items, IM_ARRAYSIZE(items));
-		ImGui::Combo("light caster", &currentLightCasterType, lightCasterTypeNames, IM_ARRAYSIZE(lightCasterTypeNames));
 		ImGui::Checkbox("rotate boxes", (bool*)&shouldRotate);
-		if (currentLightCasterType == Point || currentLightCasterType == Spot)
+
+		if (ImGui::CollapsingHeader("DirectionalLight"))
 		{
-			ImGui::SliderFloat("linear term", &attenuationLinear, 0.027f, 0.7f);
-			ImGui::SliderFloat("quadratic term", &attenuationQuadratic, 0.003f, 1.8f);
-			ImGui::InputFloat3("light pos", (float*)&lightPos);
+			ImGui::ColorEdit3("dir ambient color", (float*)&directionalLightAmbient);
+			ImGui::ColorEdit3("dir diffuse color", (float*)&directionalLightDiffuse);
+			ImGui::ColorEdit3("dir specular color", (float*)&directionalLightSpecular);
+			ImGui::InputFloat3("dir direction", (float*)&directionalLightDir);
 		}
-		if (currentLightCasterType == Directional)
+
+		ImGui::SliderFloat("linear term", &attenuationLinear, 0.027f, 0.7f);
+		ImGui::SliderFloat("quadratic term", &attenuationQuadratic, 0.003f, 1.8f);
+
+		if (ImGui::CollapsingHeader("PointLight"))
 		{
-			ImGui::InputFloat3("light direction", (float*)&lightDirection);
+			ImGui::ColorEdit3("point ambient color", (float*)&pointLightAmbient);
+			ImGui::ColorEdit3("point diffuse color", (float*)&pointLightDiffuse);
+			ImGui::ColorEdit3("point specular color", (float*)&pointLightSpecular);
+			ImGui::InputFloat3("point position", (float*)&pointLightPos);
 		}
-		if (currentLightCasterType == Spot)
+
+		if (ImGui::CollapsingHeader("SpotLight"))
 		{
-			ImGui::InputFloat3("spot direction", (float*)&spotDirection);
+			ImGui::ColorEdit3("spot ambient color", (float*)&spotLightAmbient);
+			ImGui::ColorEdit3("spot diffuse color", (float*)&spotLightDiffuse);
+			ImGui::ColorEdit3("spot specular color", (float*)&spotLightSpecular);
+			ImGui::InputFloat3("spot position", (float*)&spotLightPos);
+			ImGui::InputFloat3("spot direction", (float*)&spotLightDir);
 			ImGui::SliderFloat("spot inner cutoff angle", &cutoffAngle, 0.0f, 25.0f);
 			ImGui::SliderFloat("spot outer cutoff angle", &outerCutoffAngle, 5.0f, 25.0f);
 		}
+
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
 
@@ -349,9 +348,7 @@ int main()
 	glDeleteBuffers(1, &VBO);
 	glDeleteVertexArrays(1, &lightVAO);
 	glDeleteProgram(objPhongShader);
-	glDeleteProgram(objPhongDirShader);
 	glDeleteProgram(lightShader);
-	glDeleteProgram(objPhongSpotShader);
 	glDeleteTextures(1, &container_tex);
 	glDeleteTextures(1, &container_tex_specular);
 	glDeleteTextures(1, &emission_map);

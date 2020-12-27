@@ -24,7 +24,6 @@ in vec3 LightPos;
 
 uniform Material material;
 uniform Light light;
-uniform vec3 lightColor;
 
 void main()
 {

@@ -42,6 +42,7 @@ namespace texture
 
 		return textureID;
 	}
+
 	unsigned int loadFromFile(const char* path, unsigned int format, bool flip, int wrapping_mode, int filtering_mode)
 	{
 		unsigned int texture;
@@ -69,6 +70,7 @@ namespace texture
 		{
 			printf("Failed to load texture: %s\n", path);
 		}
+
 		stbi_image_free(data);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		return texture;

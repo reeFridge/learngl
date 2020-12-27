@@ -21,7 +21,6 @@ in vec3 LightDir;
 
 uniform Material material;
 uniform Light light;
-uniform vec3 lightColor;
 
 void main()
 {
