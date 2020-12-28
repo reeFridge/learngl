@@ -139,7 +139,7 @@ vec3 calcSpotLight(SpotLight light, vec3 lightPos, vec3 lightDir, vec3 norm)
 	float theta = dot(lightDirection, normalize(lightDir));
 	float epsilon = light.cutoffAngle - light.outerCutoffAngle;
 	float intensity = clamp((theta - light.outerCutoffAngle) / epsilon, 0.0, 1.0);
-	
+
 	vec3 ambientColor = calcAmbientComponent(light.ambient);
 	vec3 diffuseColor = calcDiffuseComponent(light.diffuse, lightDirection, norm);
 	vec3 specularColor = calcSpecularComponent(light.specular, lightDirection, norm);
