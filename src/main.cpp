@@ -105,10 +105,10 @@ int main()
 	const char* glsl_version = "#version 330";
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-	unsigned int combinedVS = shader::loadFromFile("./shaders/phong_combined_vertex.glsl", GL_VERTEX_SHADER);
-	unsigned int combinedFS = shader::loadFromFile("./shaders/phong_combined_fragment.glsl", GL_FRAGMENT_SHADER);
-	unsigned int phongvs = shader::loadFromFile("./shaders/phong_vertex.glsl", GL_VERTEX_SHADER);
-	unsigned int lightFS = shader::loadFromFile("./shaders/light_fragment.glsl", GL_FRAGMENT_SHADER);
+	unsigned int combinedVS = shader::loadFromFile("./src/shaders/phong_combined_vertex.glsl", GL_VERTEX_SHADER);
+	unsigned int combinedFS = shader::loadFromFile("./src/shaders/phong_combined_fragment.glsl", GL_FRAGMENT_SHADER);
+	unsigned int phongvs = shader::loadFromFile("./src/shaders/phong_vertex.glsl", GL_VERTEX_SHADER);
+	unsigned int lightFS = shader::loadFromFile("./src/shaders/light_fragment.glsl", GL_FRAGMENT_SHADER);
 
 	unsigned int objPhongShader = shader::createProgram(combinedVS, combinedFS);
 	unsigned int lightShader = shader::createProgram(phongvs, lightFS);
