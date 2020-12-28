@@ -16,7 +16,7 @@ IMGUI_EXAMPLES = $(IMGUI)/examples
 STB_IMAGE = $(LIB_ROOT)/stb_image
 
 INCLUDES = -I$(GLAD_INCLUDE) -I$(STB_IMAGE) -I$(GLM) -I$(SRC_ROOT) -I$(IMGUI) -I$(IMGUI_EXAMPLES)
-LDLIBS = -lX11 -lglfw3 -lGL -lpthread -ldl
+LDLIBS = -lX11 -lglfw -lGL -lpthread -ldl -lassimp
 CFLAGS = -Wall -I$(GLAD_INCLUDE)
 CXXFLAGS = -std=c++11 -Wall -DIMGUI_IMPL_OPENGL_LOADER_GLAD $(INCLUDES)
 
