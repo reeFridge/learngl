@@ -21,8 +21,97 @@
 #include <utils/texture.h>
 #include <common/figures.h>
 
+#include <vector>
+#include <string>
+
 const unsigned int W = 1024;
 const unsigned int H = 768;
+
+struct Vertex
+{
+	glm::vec3 position;
+	glm::vec3 normal;
+	glm::vec2 textureCoords;
+};
+
+enum TextureType
+{
+	DIFFUSE,
+	SPECULAR
+};
+
+struct Texture
+{
+	unsigned int id;
+	TextureType type;
+};
+
+struct Mesh
+{
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+	std::vector<Texture> textures;
+	unsigned int vao, vbo, ebo;
+};
+
+void setupMesh(Mesh &mesh)
+{
+	glGenVertexArrays(1, &(mesh.vao));
+	glGenBuffers(1, &(mesh.vbo));
+	glGenBuffers(1, &(mesh.ebo));
+
+	glBindVertexArray(mesh.vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+	glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(Vertex), &(mesh.vertices[0]), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), &(mesh.indices[0]), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, textureCoords));
+}
+
+void drawMesh(Mesh &mesh, unsigned int &shader)
+{
+	glUseProgram(shader);
+	unsigned int diffuseN = 0, specularN = 0;
+	for (unsigned int i = 0; i < mesh.textures.size(); ++i)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		bool isDiffuse = mesh.textures[i].type == DIFFUSE;
+		std::string name(isDiffuse ? "diffuse_" : "specular_");
+		name += std::to_string(isDiffuse ? diffuseN : specularN);
+		glUniform1i(glGetUniformLocation(shader, ("material." + name).c_str()), i);
+		glBindTexture(GL_TEXTURE_2D, mesh.textures[i].id);
+		diffuseN += isDiffuse ? 1 : 0;
+		specularN += isDiffuse ? 0 : 1;
+	}
+	glActiveTexture(GL_TEXTURE0);
+
+	glBindVertexArray(mesh.vao);
+	glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+}
+
+struct Model
+{
+	std::vector<Mesh> meshes;
+};
+
+void drawModel(Model &model, unsigned int &shader)
+{
+	for (unsigned int i = 0; i < model.meshes.size(); ++i)
+	{
+		drawMesh(model.meshes[i], shader);
+	}
+}
 
 Camera camera(
 	45.0f, // fov
