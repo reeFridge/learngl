@@ -1,7 +1,7 @@
 #version 330 core
 struct Material {
-	sampler2D diffuse;
-	sampler2D specular;
+	sampler2D diffuse_0;
+	sampler2D specular_0;
 	sampler2D emission;
 	uint shininess;
 };
@@ -70,7 +70,7 @@ void main()
 vec3 calcDiffuseComponent(vec3 diffuse, vec3 lightDirection, vec3 norm)
 {
 	float diff = max(dot(norm, lightDirection), 0.0);
-	vec3 diffuseColor = (vec3(texture(material.diffuse, TexCoords)) * diff) * diffuse;
+	vec3 diffuseColor = (vec3(texture(material.diffuse_0, TexCoords)) * diff) * diffuse;
 
 	return diffuseColor;
 }
@@ -80,7 +80,7 @@ vec3 calcSpecularComponent(vec3 specular, vec3 lightDirection, vec3 norm)
 	vec3 viewDirection = normalize(-FragPos);
 	vec3 reflectDirection = reflect(-lightDirection, norm);
 	float spec = pow(max(dot(viewDirection, reflectDirection), 0.0), material.shininess);
-	vec3 specularIntensity = texture(material.specular, TexCoords).rgb;
+	vec3 specularIntensity = texture(material.specular_0, TexCoords).rgb;
 	vec3 specularColor = (specularIntensity * spec) * specular;
 
 	return specularColor;
@@ -88,12 +88,12 @@ vec3 calcSpecularComponent(vec3 specular, vec3 lightDirection, vec3 norm)
 
 vec3 calcAmbientComponent(vec3 ambient)
 {
-	return vec3(texture(material.diffuse, TexCoords)) * ambient;
+	return vec3(texture(material.diffuse_0, TexCoords)) * ambient;
 }
 
 vec3 calcEmissionComponent()
 {
-	vec3 specularIntensity = texture(material.specular, TexCoords).rgb;
+	vec3 specularIntensity = texture(material.specular_0, TexCoords).rgb;
 	vec3 showEmission = step(vec3(1.0), vec3(1.0) - specularIntensity);
 	vec3 emissionColor = texture(material.emission, TexCoords).rgb * showEmission;
 

@@ -2,10 +2,6 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cstdio>
@@ -19,99 +15,11 @@
 #include <utils/rotation.h>
 #include <utils/camera.h>
 #include <utils/texture.h>
+#include <utils/model.h>
 #include <common/figures.h>
 
-#include <vector>
-#include <string>
-
-const unsigned int W = 1024;
-const unsigned int H = 768;
-
-struct Vertex
-{
-	glm::vec3 position;
-	glm::vec3 normal;
-	glm::vec2 textureCoords;
-};
-
-enum TextureType
-{
-	DIFFUSE,
-	SPECULAR
-};
-
-struct Texture
-{
-	unsigned int id;
-	TextureType type;
-};
-
-struct Mesh
-{
-	std::vector<Vertex> vertices;
-	std::vector<unsigned int> indices;
-	std::vector<Texture> textures;
-	unsigned int vao, vbo, ebo;
-};
-
-void setupMesh(Mesh &mesh)
-{
-	glGenVertexArrays(1, &(mesh.vao));
-	glGenBuffers(1, &(mesh.vbo));
-	glGenBuffers(1, &(mesh.ebo));
-
-	glBindVertexArray(mesh.vao);
-
-	glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
-	glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(Vertex), &(mesh.vertices[0]), GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), &(mesh.indices[0]), GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, textureCoords));
-}
-
-void drawMesh(Mesh &mesh, unsigned int &shader)
-{
-	glUseProgram(shader);
-	unsigned int diffuseN = 0, specularN = 0;
-	for (unsigned int i = 0; i < mesh.textures.size(); ++i)
-	{
-		glActiveTexture(GL_TEXTURE0 + i);
-		bool isDiffuse = mesh.textures[i].type == DIFFUSE;
-		std::string name(isDiffuse ? "diffuse_" : "specular_");
-		name += std::to_string(isDiffuse ? diffuseN : specularN);
-		glUniform1i(glGetUniformLocation(shader, ("material." + name).c_str()), i);
-		glBindTexture(GL_TEXTURE_2D, mesh.textures[i].id);
-		diffuseN += isDiffuse ? 1 : 0;
-		specularN += isDiffuse ? 0 : 1;
-	}
-	glActiveTexture(GL_TEXTURE0);
-
-	glBindVertexArray(mesh.vao);
-	glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-}
-
-struct Model
-{
-	std::vector<Mesh> meshes;
-};
-
-void drawModel(Model &model, unsigned int &shader)
-{
-	for (unsigned int i = 0; i < model.meshes.size(); ++i)
-	{
-		drawMesh(model.meshes[i], shader);
-	}
-}
+const unsigned int W = 1440;
+const unsigned int H = 900;
 
 Camera camera(
 	45.0f, // fov
@@ -185,6 +93,9 @@ int main()
 		return -1;
 	}
 
+	Model mdl;
+	loadModel(mdl, "../resources/backpack/backpack.obj", "../resources/backpack/");
+
 	// Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -211,9 +122,9 @@ int main()
 	glDeleteShader(combinedFS);
 	glDeleteShader(lightFS);
 	
-	unsigned int container_tex = texture::loadTexture("./textures/container2.png");
-	unsigned int emission_map = texture::loadTexture("./textures/matrix.jpg");
-	unsigned int container_tex_specular = texture::loadTexture("./textures/container2_specular.png");
+	unsigned int container_tex = texture::loadTexture("./textures/container2.png", false);
+	unsigned int emission_map = texture::loadTexture("./textures/matrix.jpg", false);
+	unsigned int container_tex_specular = texture::loadTexture("./textures/container2_specular.png", false);
 	
 	unsigned int VBO, VAO, lightVAO;
 	glGenVertexArrays(1, &VAO);
@@ -239,6 +150,8 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	ImVec4 clearColor = ImVec4(0.2, 0.2, 0.2, 1.0f);
+	ImVec4 rotationByAxis(0.0f, 90.0f, 0.0f, 1.0f);
+	ImVec4 scale(1.0f, 1.0f, 1.0f, 1.0f);
 
 	// directionalLight
 	ImVec4 directionalLightAmbient = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
@@ -290,12 +203,14 @@ int main()
 		glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		/*
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, container_tex);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, container_tex_specular);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, emission_map);
+		*/
 
 		glm::mat4 view(1.0f), proj;
 		view = view * camera.view_matrix();
@@ -305,9 +220,9 @@ int main()
 			unsigned int objShader = objPhongShader;
 			glUseProgram(objShader);
 
-			glUniform1i(glGetUniformLocation(objShader, "material.diffuse"), 0);
-			glUniform1i(glGetUniformLocation(objShader, "material.specular"), 1);
-			glUniform1i(glGetUniformLocation(objShader, "material.emission"), 2);
+			//glUniform1i(glGetUniformLocation(objShader, "material.diffuse"), 0);
+			//glUniform1i(glGetUniformLocation(objShader, "material.specular"), 1);
+			//glUniform1i(glGetUniformLocation(objShader, "material.emission"), 2);
 			glUniform1ui(glGetUniformLocation(objShader, "material.shininess"), atoi(items[current]));
 
 			glUniform3f(glGetUniformLocation(objShader, "directionalLight.ambient"), directionalLightAmbient.x, directionalLightAmbient.y, directionalLightAmbient.z);
@@ -337,9 +252,26 @@ int main()
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
 
+			// model
+			glm::mat4 model(1.0f);
+			glm::mat3 normalMatrix = glm::transpose(glm::inverse(view * model));
+			model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+
+			glm::mat4 rotByX = glm::rotate(model, glm::radians(rotationByAxis.x), glm::vec3(1.0f, 0.0f, 0.0f));
+			glm::mat4 rotByY = glm::rotate(model, glm::radians(rotationByAxis.y), glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::mat4 rotByZ = glm::rotate(model, glm::radians(rotationByAxis.z), glm::vec3(0.0f, 0.0f, 1.0f));
+			glm::mat4 rot = rotByZ * rotByY * rotByX;
+			model = rot * model;
+
+			model = glm::scale(model, glm::vec3(scale.x, scale.y, scale.z));
+			glUniformMatrix3fv(glGetUniformLocation(objShader, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+			glUniformMatrix4fv(glGetUniformLocation(objShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
+			drawModel(mdl, objShader);
+
+			/* boxes
 			glBindVertexArray(VAO);
 
-			for (unsigned int i = 0; i < 10; ++i)
+			for (unsigned int i = 1; i < 10; ++i)
 			{
 				glm::mat4 model(1.0f);
 				glm::mat3 normalMatrix = glm::transpose(glm::inverse(view * model));
@@ -353,6 +285,7 @@ int main()
 				glUniformMatrix4fv(glGetUniformLocation(objShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
 				glDrawArrays(GL_TRIANGLES, 0, 36);
 			}
+			*/
 		}
 
 		// draw light positions
@@ -392,6 +325,12 @@ int main()
 		ImGui::ColorEdit3("clear color", (float*)&clearColor);
 		ImGui::Combo("shininess", &current, items, IM_ARRAYSIZE(items));
 		ImGui::Checkbox("rotate boxes", (bool*)&shouldRotate);
+
+		if (ImGui::CollapsingHeader("Model"))
+		{
+			ImGui::InputFloat3("model scale", (float*)&scale);
+			ImGui::InputFloat3("model rotation by axis", (float*)&rotationByAxis);
+		}
 
 		if (ImGui::CollapsingHeader("DirectionalLight"))
 		{
@@ -436,6 +375,8 @@ int main()
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+
+	destroyModel(mdl);
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
