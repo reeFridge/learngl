@@ -122,9 +122,11 @@ int main()
 	glDeleteShader(combinedFS);
 	glDeleteShader(lightFS);
 	
+	/*
 	unsigned int container_tex = texture::loadTexture("./textures/container2.png", false);
 	unsigned int emission_map = texture::loadTexture("./textures/matrix.jpg", false);
 	unsigned int container_tex_specular = texture::loadTexture("./textures/container2_specular.png", false);
+	*/
 	
 	unsigned int VBO, VAO, lightVAO;
 	glGenVertexArrays(1, &VAO);
@@ -150,7 +152,7 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	ImVec4 clearColor = ImVec4(0.2, 0.2, 0.2, 1.0f);
-	ImVec4 rotationByAxis(0.0f, 90.0f, 0.0f, 1.0f);
+	ImVec4 rotationByAxis(0.0f, 0.0f, 0.0f, 1.0f);
 	ImVec4 scale(1.0f, 1.0f, 1.0f, 1.0f);
 
 	// directionalLight
@@ -203,15 +205,6 @@ int main()
 		glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		/*
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, container_tex);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, container_tex_specular);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, emission_map);
-		*/
-
 		glm::mat4 view(1.0f), proj;
 		view = view * camera.view_matrix();
 		proj = glm::perspective(glm::radians(camera.fov), (float)(W/H), 0.1f, 100.0f);
@@ -220,9 +213,6 @@ int main()
 			unsigned int objShader = objPhongShader;
 			glUseProgram(objShader);
 
-			//glUniform1i(glGetUniformLocation(objShader, "material.diffuse"), 0);
-			//glUniform1i(glGetUniformLocation(objShader, "material.specular"), 1);
-			//glUniform1i(glGetUniformLocation(objShader, "material.emission"), 2);
 			glUniform1ui(glGetUniformLocation(objShader, "material.shininess"), atoi(items[current]));
 
 			glUniform3f(glGetUniformLocation(objShader, "directionalLight.ambient"), directionalLightAmbient.x, directionalLightAmbient.y, directionalLightAmbient.z);
@@ -266,26 +256,8 @@ int main()
 			model = glm::scale(model, glm::vec3(scale.x, scale.y, scale.z));
 			glUniformMatrix3fv(glGetUniformLocation(objShader, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 			glUniformMatrix4fv(glGetUniformLocation(objShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
 			drawModel(mdl, objShader);
-
-			/* boxes
-			glBindVertexArray(VAO);
-
-			for (unsigned int i = 1; i < 10; ++i)
-			{
-				glm::mat4 model(1.0f);
-				glm::mat3 normalMatrix = glm::transpose(glm::inverse(view * model));
-				model = glm::translate(model, cubePositions[i]);
-				float angle = 20.0f * i;
-				if (shouldRotate)
-				{
-					model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-				}
-				glUniformMatrix3fv(glGetUniformLocation(objShader, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-				glUniformMatrix4fv(glGetUniformLocation(objShader, "model"), 1, GL_FALSE, glm::value_ptr(model));
-				glDrawArrays(GL_TRIANGLES, 0, 36);
-			}
-			*/
 		}
 
 		// draw light positions
@@ -383,9 +355,6 @@ int main()
 	glDeleteVertexArrays(1, &lightVAO);
 	glDeleteProgram(objPhongShader);
 	glDeleteProgram(lightShader);
-	glDeleteTextures(1, &container_tex);
-	glDeleteTextures(1, &container_tex_specular);
-	glDeleteTextures(1, &emission_map);
 
 	return 0;
 }
